@@ -1,0 +1,16 @@
+services:
+  blue:
+    build: .
+    environment:
+      SERVICE_NAME: blue
+      MESSAGE: Hello from the blue service
+    ports:
+      - "3001:3000"
+
+  green:
+    build: .
+    environment:
+      SERVICE_NAME: green
+      MESSAGE: Hello from the green service
+    ports:
+      - "3002:3000"

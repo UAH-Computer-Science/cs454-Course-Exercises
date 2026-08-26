@@ -1,0 +1,59 @@
+#cloud-config
+package_update: true
+packages:
+  - nodejs
+
+write_files:
+  - path: /opt/cs454/app.js
+    permissions: '0644'
+    content: |
+      const http = require('http');
+      const os = require('os');
+
+      const port = Number(process.env.PORT || 3000);
+      const serviceName = process.env.SERVICE_NAME || 'cs454-vm';
+      const message = process.env.MESSAGE || 'Hello from a cloud-initialized VM';
+      let requestCount = 0;
+
+      const server = http.createServer((req, res) => {
+        requestCount += 1;
+        const body = {
+          service: serviceName,
+          message,
+          hostname: os.hostname(),
+          pid: process.pid,
+          platform: process.platform,
+          node: process.version,
+          requestCount,
+          path: req.url,
+          timestamp: new Date().toISOString()
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(body, null, 2));
+      });
+
+      server.listen(port, '0.0.0.0', () => {
+        console.log(`${serviceName} listening on port ${port}`);
+      });
+
+  - path: /etc/systemd/system/cs454.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=CS454 demo service
+      After=network.target
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/opt/cs454
+      Environment=SERVICE_NAME=vm-cloud-init
+      Environment=MESSAGE=Provisioned automatically with cloud-init
+      ExecStart=/usr/bin/node /opt/cs454/app.js
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - systemctl daemon-reload
+  - systemctl enable --now cs454.service
