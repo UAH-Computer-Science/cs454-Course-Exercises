@@ -28,3 +28,15 @@ const server = http.createServer((req, res) => {
 server.listen(port, '0.0.0.0', () => {
   console.log(`${serviceName} listening on port ${port}`);
 });
+
+const shutdown = (signal) => {
+    console.log(`Received ${signal}, shutting down...`);
+
+    server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+    });
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
