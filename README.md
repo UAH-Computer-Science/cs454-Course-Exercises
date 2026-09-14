@@ -71,6 +71,17 @@ Concepts:
 
 See [`exercise-04-local-kubernetes/README.md`](exercise-04-local-kubernetes/README.md).
 
+## Troubleshooting
+
+Exercises 02, 03, and 04 need to reach the internet from a virtual machine or
+pull container images. On a managed laptop behind a VPN or endpoint-security
+agent, that traffic is often blocked in ways whose error messages point
+somewhere unhelpful.
+
+See [`RESTRICTED-NETWORKS.md`](RESTRICTED-NETWORKS.md) for a diagnosis ladder
+and the usual workarounds, plus notes on what the failure teaches about NAT
+gateways, private subnets, and egress proxies.
+
 ## The story these exercises tell
 
 Each exercise intentionally creates the motivation for the next one:

@@ -18,6 +18,12 @@ No cloud account is required.
 
 > Instructor note: Multipass is convenient because it gives Linux, macOS, and Windows users a similar command-line experience. A VirtualBox or libvirt VM works just as well conceptually.
 
+> On a managed laptop with a corporate VPN or endpoint-security agent, step 3
+> may fail with mirror connection errors, DNS failures, or untrusted
+> certificates. That is a network restriction rather than a mistake on your
+> part. See [`RESTRICTED-NETWORKS.md`](../RESTRICTED-NETWORKS.md) for how to
+> diagnose it and how to work around it.
+
 ## 1. Create an Ubuntu VM
 
 From the repository root:
@@ -85,6 +91,14 @@ Install Node.js inside the VM:
 multipass exec cs454-vm -- sudo apt-get update
 multipass exec cs454-vm -- sudo apt-get install -y nodejs
 ```
+
+If either command fails to reach the Ubuntu mirrors, work through
+[`RESTRICTED-NETWORKS.md`](../RESTRICTED-NETWORKS.md). It includes a fallback
+that installs Node.js over the Multipass transfer channel, which does not use
+the VM's network at all.
+
+Note that the archive provides Node.js 18 on 24.04, so `node --version` here
+will differ from whatever you ran in Exercise 01. The service does not care.
 
 Now enter the VM again:
 
