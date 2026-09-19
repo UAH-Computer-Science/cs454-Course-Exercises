@@ -1,0 +1,4 @@
+
+# Local restricted-network overrides (see RESTRICTED-NETWORKS.md)
+exercise-02-local-vm/cloud-init.local.yaml
+node-v*-linux-*.tar.xz
