@@ -29,8 +29,14 @@ curl: (6) Could not resolve host: ports.ubuntu.com
 E: Unable to locate package nodejs
 ```
 
-The last one is a consequence, not a cause: `apt-get update` failed, so the
-package index is empty, so apt cannot find a package that exists.
+```text
+failed to get sandbox image "rancher/mirrored-pause:3.6":
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+
+The third one is a consequence, not a cause: `apt-get update` failed, so the
+package index is empty, so apt cannot find a package that exists. The fourth
+belongs to Exercise 04 and is covered in its own section below.
 
 ## Diagnose before you change anything
 
@@ -300,6 +306,124 @@ Exercise 02 steps 3 through 5 then work as written. Calling the service from
 the host with `curl http://VM_IP_ADDRESS:3000` is host-to-VM traffic and does
 not cross the blocked path.
 
+## Exercise 04: pods never leave `ContainerCreating`
+
+This one hides well, because the symptom is an HTTP failure and the cause is a
+certificate. You follow the exercise, everything appears to succeed, and then:
+
+```text
+$ curl http://localhost:8080
+curl: (52) Empty reply from server
+```
+
+The instinct is to suspect the port mapping or the Ingress, since those are the
+new concepts. Check the pods first:
+
+```bash
+kubectl get pods -A
+```
+
+If every pod — yours *and* everything in `kube-system` — sits in
+`ContainerCreating` and never reaches `Running`, this is your problem. Read the
+events on any one of them:
+
+```bash
+kubectl describe pod <pod-name> | sed -n '/^Events:/,$p'
+```
+
+```text
+Failed to create pod sandbox: failed to get sandbox image
+"rancher/mirrored-pause:3.6": failed to pull and unpack image ...
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+
+### Why one certificate stops the entire cluster
+
+k3d nodes are containers, and containerd inside them has its own CA bundle. It
+does not consult the macOS keychain, so the inspecting root your host trusts
+means nothing there. Every pull fails, and that cascades further than you would
+expect:
+
+- Every pod needs the **pause** image — the infrastructure container that owns
+  the pod's network namespace. No pause image, no pod, whatever your app does.
+- k3s pulls **CoreDNS, Traefik, and metrics-server** on first start. Traefik is
+  the ingress controller, so it is not that your Ingress is misconfigured —
+  there is no controller running to act on it. That is the empty reply.
+
+So the port mapping was never wrong. `-p "8080:80@loadbalancer"` maps host 8080
+to the load balancer's port 80, and `service.yaml` and `ingress.yaml` describe
+in-cluster ports. Those are consistent by design.
+
+Your own image is the one thing that works, and that is informative:
+`k3d image import` side-loads a tarball straight into each node's containerd
+store without contacting a registry. It is the only pull path in the exercise
+that never crosses the proxy.
+
+### Identify the interposed authority
+
+```bash
+echo | openssl s_client -connect registry-1.docker.io:443 2>/dev/null \
+  | grep -E '^ *[0-9] s:|^ *i:'
+```
+
+A normal chain names Docker's own CA. An inspected one names your agent — on a
+Zscaler network, `O=Zscaler Inc.` and a root of `CN=Zscaler Root CA`.
+
+### Give containerd the certificate
+
+Export the root from the host keychain, keeping a single certificate per file:
+
+```bash
+mkdir -p ~/.k3d-zscaler
+security find-certificate -a -c "Zscaler Root CA" -p /Library/Keychains/System.keychain \
+  | awk '/BEGIN CERTIFICATE/{n++} n==1{print} /END CERTIFICATE/{if (n==1) exit}' \
+  > ~/.k3d-zscaler/zscaler-root.crt
+```
+
+Then tell containerd to use it for Docker Hub. Write
+`~/.k3d-zscaler/registries.yaml`:
+
+```yaml
+mirrors:
+  docker.io:
+    endpoint:
+      - https://registry-1.docker.io
+configs:
+  registry-1.docker.io:
+    tls:
+      ca_file: /etc/zscaler/zscaler-root.crt
+```
+
+Point k3s at the file explicitly rather than hoping the node's system trust
+store picks it up. Both the mount and the registry config are read when the
+cluster is created, so this replaces step 2 of the exercise — an existing
+broken cluster cannot be repaired in place:
+
+```bash
+k3d cluster delete cs454
+
+k3d cluster create cs454 \
+  --servers 1 \
+  --agents 2 \
+  -p "8080:80@loadbalancer" \
+  --volume "$HOME/.k3d-zscaler/zscaler-root.crt:/etc/zscaler/zscaler-root.crt@all" \
+  --registry-config "$HOME/.k3d-zscaler/registries.yaml"
+```
+
+Confirm the cluster can pull before deploying anything:
+
+```bash
+kubectl get pods -n kube-system
+kubectl get ingressclass
+```
+
+CoreDNS and metrics-server should reach `Running`, and a `traefik` ingress class
+should exist. Then continue with step 3 as written. The same caveat from
+[the certificate section](#when-https-fails-with-an-untrusted-certificate)
+applies: you are choosing to trust a party that can read your traffic, and that
+certificate should not travel to machines outside the boundary where that
+decision was already made.
+
 ## Why this is worth understanding
 
 Debugging this is not a detour from the course. It is the same problem cloud
@@ -321,6 +445,10 @@ infrastructure solves, seen from the inside:
   every machine behind the proxy must be told whom to trust. That is a real
   operational burden, and it is why cloud egress designs tend to prefer NAT
   gateways over inspecting proxies unless inspection is a requirement.
+- **A registry is a network dependency like any other.** A cluster that cannot
+  reach one cannot start anything, including its own control-plane add-ons.
+  Side-loading images works locally and does not scale, which is why every
+  cloud provider sells a registry inside your own network boundary.
 - **Configuration has to survive recreation.** A fix typed into a shell is lost
   the moment the VM is rebuilt. A fix in `cloud-init.yaml` is not. That is the
   difference between administration and infrastructure as code.

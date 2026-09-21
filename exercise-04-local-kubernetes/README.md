@@ -206,13 +206,41 @@ kubectl apply -f deployment.yaml
 kubectl rollout status deployment/cs454-demo
 ```
 
-Call the application again:
+Call the application again, several times:
 
 ```bash
-curl http://localhost:8080
+for i in {1..6}; do curl -s http://localhost:8080 | grep message; done
 ```
 
 Kubernetes performs a rolling replacement of the pods to move from the old desired state to the new one.
+
+Call it repeatedly rather than once. `kubectl rollout status` reports success as
+soon as the new pods are available, but pods from the old version can remain in
+the Service's endpoint list for a moment while they shut down. A single request
+made at that instant can still be answered by an old pod and show the old
+message.
+
+If some responses carry the old message and some the new, nothing is wrong —
+that is the rolling replacement, caught in progress. Run the loop again a few
+seconds later and every response reports the new value. A rolling update is not
+instantaneous by design: that overlap is what lets the application keep serving
+while it changes.
+
+Notice something else that just happened:
+
+```bash
+kubectl get pods
+```
+
+You are back to three pods, even though step 7 left you with two. The apply did
+that, because `deployment.yaml` declares `replicas: 3` and applying the file
+makes the cluster match the file. The replica count you set with
+`kubectl scale` was a change to live state; the file is the desired state, and
+the file wins. That is the distinction the whole exercise is built on, and it is
+worth pausing on here:
+
+> An imperative command changes the cluster. A declarative file defines it.
+> Applying the file discards anything the commands did that the file does not say.
 
 Inspect rollout history:
 
