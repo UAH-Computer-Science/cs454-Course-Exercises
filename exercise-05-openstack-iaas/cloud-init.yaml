@@ -52,7 +52,7 @@ write_files:
       Type=simple
       Environment=PORT=3000
       Environment=SERVICE_NAME=cs454-openstack
-      Environment=MESSAGE=Hello from an OpenStack instance
+      Environment="MESSAGE=Hello from an OpenStack instance"
       ExecStart=/usr/bin/node /opt/cs454/app.js
       Restart=on-failure
       User=nobody
