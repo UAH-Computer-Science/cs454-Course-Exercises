@@ -71,6 +71,24 @@ Concepts:
 
 See [`exercise-04-local-kubernetes/README.md`](exercise-04-local-kubernetes/README.md).
 
+### Exercise 05 — Deploy the Same Service on OpenStack IaaS
+
+Move the same service onto a real IaaS control plane. Launch an Ubuntu instance from an image and flavor, place it on a project network, provision it with cloud-init, control access with a security group, attach a floating IP, and compare the resulting abstractions with the AWS concepts used after the midterm.
+
+Concepts:
+
+- cloud regions and projects
+- images and flavors
+- virtual networks, subnets, and routers
+- security groups
+- floating/public IP addresses
+- key pairs
+- cloud-init / user data
+- cloud schedulers and resource IDs
+- mapping OpenStack IaaS concepts to AWS
+
+See [`exercise-05-openstack-iaas/README.md`](exercise-05-openstack-iaas/README.md).
+
 ## Troubleshooting
 
 Exercises 02, 03, and 04 need to reach the internet from a virtual machine or
@@ -112,8 +130,14 @@ Virtual Machine         Docker Compose
                          Kubernetes
                              |
                              v
-                   Move the same abstractions
-                     onto cloud infrastructure
+                         OpenStack
+                             |
+                             v
+                  See the cloud control plane
+                             |
+                             v
+                    Map the same concepts
+                      onto AWS and Azure
 ```
 
 ## Suggested course progression
