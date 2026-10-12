@@ -19,6 +19,8 @@ This exercise brings many of those ideas together using an Infrastructure-as-a-S
 
 See [`OPENSTACK-SETTINGS.md`](OPENSTACK-SETTINGS.md) for the class environment and the OpenStack-to-AWS vocabulary mapping.
 
+> **Want to run OpenStack on your own hardware?** See [Optional: Build Your Own OpenStack Lab with DevStack](OPTIONAL-LOCAL-DEVSTACK.md). This is entirely voluntary, ungraded, and **not a prerequisite** for this exercise; use the class OpenStack environment for the assigned work.
+
 ## Prerequisites
 
 - access to the class OpenStack environment;
