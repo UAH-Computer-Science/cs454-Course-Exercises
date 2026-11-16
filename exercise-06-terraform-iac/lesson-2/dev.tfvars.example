@@ -1,0 +1,2 @@
+container_name = "cs454-dev-web"
+host_port      = 8081
