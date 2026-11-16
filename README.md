@@ -89,6 +89,20 @@ Concepts:
 
 See [`exercise-05-openstack-iaas/README.md`](exercise-05-openstack-iaas/README.md).
 
+### Exercise 06 — Infrastructure as Code with Terraform
+
+Define and manage a local Docker image, network, and NGINX container using Terraform. Start with the basic `init → plan → apply → destroy` lifecycle, then add variables, outputs, and a controlled infrastructure change. No paid cloud account is required.
+
+Concepts:
+
+- declarative infrastructure as code
+- providers, resources, references, and dependencies
+- planning and applying infrastructure changes
+- Terraform state and drift
+- variables, outputs, reproducibility, and cleanup
+
+See [`exercise-06-terraform-iac/README.md`](exercise-06-terraform-iac/README.md).
+
 ## Troubleshooting
 
 Exercises 02, 03, and 04 need to reach the internet from a virtual machine or
@@ -138,6 +152,10 @@ Virtual Machine         Docker Compose
                              v
                     Map the same concepts
                       onto AWS and Azure
+                             |
+                             v
+                      Define it as code
+                          (Terraform)
 ```
 
 ## Suggested course progression
