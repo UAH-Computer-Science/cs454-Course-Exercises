@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars or pass with -var-file after editing.
+host_port   = 8080
+environment = "dev"
